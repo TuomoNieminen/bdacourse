@@ -135,7 +135,8 @@ plot_beta_posterior <- function(a, b, data) {
 }
 ```
 
-There is quite a lot of data so reasonably uninformative or vague priors do not have a significant effect on the posterior. A very informative prior will however affect inference.
+There is quite a lot of data so reasonably uninformative or vague priors do not have a significant effect on the posterior. 
+A very informative prior will however affect inference.
 
 
 ```{r}
