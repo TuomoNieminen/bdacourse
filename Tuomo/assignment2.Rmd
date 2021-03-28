@@ -92,7 +92,7 @@ beta_interval <- function(prior_alpha, prior_beta, data, prob  = 0.9) {
 
 ```
 
-In the case of $p( \pi \mid y)$, this corresponds to
+In the case of $p( \pi \mid y)$, the expectation corresponds to
 
 ```{r}
 beta_point_est(a, b, algae)
@@ -106,11 +106,7 @@ beta_interval(a, b, algae, 0.9)
 
 ## c)
 
-We can use the beta cumulative distribution function to evaluate the probability.
-
-$$
-P(\pi < 0.2 \mid y) = F_{\pi \mid y}(0.2)
-$$
+We can use the beta cumulative distribution function to evaluate the probability $P(\pi < 0.2 \mid y) = F_{\pi \mid y}(0.2)$.
 
 In this case, the probability is
 
