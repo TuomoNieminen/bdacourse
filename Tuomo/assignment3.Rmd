@@ -315,3 +315,84 @@ mean(or)
 quantile(or, p = c(0.025,0.975))
 ```
 
+## b) 
+
+See the model description in the beginning of the exercise for a brief sensitivity discussion.
+
+# 3
+
+Two production lines for windshields, with independent data samples from each.
+```{r}
+y1 <- get(data("windshieldy1"))
+y2 <- get(data("windshieldy2"))
+```
+
+A summary of data from production line 1:
+```{r}
+summary(y1)
+```
+
+A summary of data from production line 2:
+
+```{r}
+summary(y2)
+```
+
+We assume that the samples come from two normal distributions with unknown means $\mu_1$ and $\mu_2$ and unkown standard deviations $\sigma_1$ and $\sigma_2$.
+
+## Model
+
+If we choose to use a uniform prior for the means and standard deviations, then the model for both production lines is identical to the model defined in the first exercise and the posterior distributions are t distributions.
+
+
+## a)
+
+
+```{r}
+t_posterior <- function(y, N = 5000) {
+  n <- length(y)
+  mean <- mean(y)
+  scale <- sd(y) / sqrt(n)
+  df <- n - 1
+  list(df = df,
+       mean = mean,
+       scale = scale,
+       n = N)
+}
+s1 <- do.call("rtnew", t_posterior(y1))
+s2 <- do.call("rtnew", t_posterior(y2))
+mu_d <- s1 - s2
+```
+
+The point estimate for $\mu_d = \mu_1 - \mu_2$ is
+
+```{r}
+mean(mu_d)
+```
+
+A 90% credible interval is:
+
+```{r}
+quantile(mu_d, p = c(0.05, 0.95))
+```
+
+A histogram of the posterior is
+
+```{r}
+hist(mu_d, breaks = 50)
+```
+
+The (posterior) probability that $mu_1 > mu_2$ is 
+
+```{r}
+sum(mu_d > 0) / length(mu_d)
+```
+
+## b)
+
+Addressing the question literally, for the means $\mu_1$ and $\mu_2$ to be exactly the same, the two production lines should be identical, i.e. they should be the same production line, in which case of course $\mu_1 = \mu_2$ (with probability one). 
+
+However, even if the production lines were identical, the posterior distributions for $\mu_1$ and $\mu2$ would be identical with probability zero, unless the number of data points are infinite. From a practical point of view, however, the posterior distributions could be identical, due to the discrete nature of measurement.
+
+If the two production lines are not identical, the posterior distributions for $\mu_1$ and $\mu_2$ should be different and $\mu_d = 0$ with probability zero. However, in practise the two posteriors could still be identical, due to discrete measurements.
+
