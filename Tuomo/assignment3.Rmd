@@ -1,0 +1,306 @@
+---
+title: "BDA - Assignment 3"
+author: "Anonymous"
+output: 
+  pdf_document: 
+  toc: yes
+toc_depth: 1
+---
+
+
+```{r setup, include=FALSE}
+# This chunk sets echo = TRUE as default, that is print all code.
+# knitr::opts_chunk$set can be used to set other notebook generation options, too.
+# include=FALSE inside curly brackets makes this block not be included in the pdf.
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loaded packages
+
+```{r, include = FALSE}
+library(aaltobda)
+library(markmyassignment)
+assignment_path <-
+paste("https://github.com/avehtari/BDA_course_Aalto/",
+"blob/master/assignments/tests/assignment3.yml", sep="")
+set_assignment(assignment_path)
+
+```
+
+
+# Exercise 3
+
+## Data
+```{r}
+y <- get(data("windshieldy1"))
+head(y)
+```
+
+## Model
+
+Prior is uniform on $(\mu, log(sigma))$, i.e.:
+
+$$
+p(\mu, \sigma) \sim 1/\sigma
+$$
+
+Likelihood is
+
+$$
+p(y \mid \mu, \sigma^2) \sim N(\mu, \sigma^2)
+$$
+
+The interest is in the parameter $\mu$ for which the marginal posterior distribution is the $t_{n−1}(y, s^2/n)$ density (BDA, page )
+
+$$
+p(\mu \mid y) \sim t_{n−1}(\bar{y}, s^2/n), \\
+s^2 = \frac{1}{n-1} \sum_{i, .., n} (y_i - \bar{y})^2
+$$
+## a)
+
+A point estimate can be derived from the expectation of the marginal posterior distribution of $\mu$ which in this case is $\bar{y}$
+
+```{r}
+mu_point_est <- function(data) {
+  mean(data)
+}
+
+mu_point_est(y)
+```
+
+A credible interval can be derived from the tails of the student-t distribution with the appropriate degrees of freedom, location and scale, which are $n-1$, $\bar{y}$ and $s/\sqrt{n}$, respectively. 
+
+```{r}
+mu_interval <- function(data, prob = 0.95) {
+  q1 <- (1-prob)/2
+  q2 <- 1 - q1
+  mean <- mean(data)
+  n <- length(data)
+  df <- n -1
+  scale <- sd(data) / sqrt(n)
+  qtnew(c(q1, q2), df = df, mean = mean, scale = scale)
+}
+
+mu_interval(y)
+```
+
+
+## b)
+
+The predictive distribution for a new oberservation is a t distribution with location $\bar{y}$, scale $\sqrt{1 + 1/n }$, and $n − 1$ degrees of freedom (BDA, page 66).
+
+$$
+p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, 1 + 1/n)
+$$
+
+The point estimate is the same is with the posterior distribution.
+
+```{r}
+mu_pred_point_est <- function(data) {
+  mu_point_est(data)
+}
+```
+
+The scale now for an observation and not for the expectation, so the credible interval is quite different, otherwise the internal is derived similarily to the posterior credibel interval for $\mu$
+
+```{r}
+mu_pred_interval <- function(data, prob = 0.95) {
+  q1 <- (1-prob)/2
+  q2 <- 1 - q1
+  mean <- mean(data)
+  n <- length(data)
+  df <- n -1
+  scale <- sqrt(1 + 1/n)*sd(data)
+  qtnew(c(q1, q2), df = df, mean = mean, scale = scale)
+}
+
+mu_pred_interval(y)
+```
+
+
+```{r}
+# the density of the predictive distribution
+y_pred_dens <- function(x, data = y) {
+    mean <- mean(data)
+  n <- length(data)
+  df <- n -1
+  scale <- sqrt(1 + 1/n)*sd(data)
+  dtnew(x, df = df, mean = mean, scale = scale)
+}
+
+new_y <- seq(10, 20, by = 0.01)
+density <- y_pred_dens(new_y)
+plot(new_y, density, type = "l")
+```
+
+## c)
+
+A group of patients was randomly assigned to treatment and control groups: out of 674 patients receiving the control, 39 died, and out of 680 receiving the treatment, 22 died.
+
+
+## Data
+```{r}
+# control
+n0 <- 674
+y0 <- 39
+
+# treatment
+n1 <- 680
+y1 <- 22
+```
+
+## Model
+
+We use a weakly informative prior with the overall proportions of successes and failures in the two groups as hyperparameters. The information in the prior distributions corresponds to a single prior observation. And as there are a lot of data from both groups, the effect of any weakly informative prior will be unsignificant to the inference.
+
+$$
+p(p_0) \sim Beta(0.05, 0.95) \\
+p(p_1) \sim Beta(0.05, 0.95)
+$$
+
+Likelihood
+$$
+p(y0 \mid p0) \sim Binom(n0, y0) \\
+p(y1 \mid p1) \sim Binom(n1, y1)
+$$
+
+The marginal posterior distributions for $p0$ and $p1$ are
+
+$$
+p(p_0 \mid y0) \sim Beta(y0 + 0.05, n0 - y0 + 0.95) \\
+p(p_1 \mid y1) \sim Beta(y1 + 0.05, n1 - y1 + 0.95) \\
+
+$$
+We are interested in the posterior distribution of the odds ratio, defined as 
+
+$$
+OR = \frac{p_1 / (1-p_1)}{p_0 / (1 - p_0)}.
+$$
+We can simulate values from the posterior distribution of OR by simulating values from the posterior distributions of $p_0$ and $p_1$ and applying the definition of OR to the samples.
+
+```{r}
+OR <- function(p0, p1) {
+  odds0 <- p0 / (1 - p0)
+  odds1 <- p1 / (1 - p1)
+  odds1 / odds0
+}
+```
+
+
+```{r}
+
+# simulate values from the posteriors of p0 and p1
+
+# hyperparameters
+a <- 0.05
+b <- 0.95
+
+# posterior samples
+N <- 10000
+set.seed(4711)
+p0 <- rbeta(N, a + y0, b + (n0-y0))
+p1 <- rbeta(N, a + y1, b + (n1 - y1))
+```
+
+```{r}
+posterior_odds_ratio_point_est  <- function(p0, p1) {
+  or <- OR(p0, p1)
+  mean(or)
+}
+posterior_odds_ratio_point_est(p0, p1)
+```
+
+```{r}
+ posterior_odds_ratio_interval <- function(p0, p1, prob = 0.95) {
+   or <- OR(p0, p1)
+   q1 <- (1-prob) / 2
+   q2 <- 1 - q1
+   quantile(or, probs = c(q1, q2))
+ }
+
+posterior_odds_ratio_interval(p0, p1)
+```
+
+## Alternative approach using logistic regression
+
+The Odds ratio can also be estimated using a logistic regression model. 
+Let $p_j = P(y_j = 1)$, where $j \in \{\text{control}, \text{treatment} \}$. Then let
+
+$$
+logit(y_j) = \alpha + \beta \cdot x_j,
+$$
+
+where $x_j$ is $0$ for the control group and $1$ for the treatment group, and $logit(p) = log(p / (1 - p))$. 
+
+
+### Estimation
+
+We fit the logistic regression model in STAN directly. The interest is in the exponent of the parameter $\beta$ which is the odds ratio of interest.
+
+
+```{r include = FALSE}
+library(rstan)
+```
+
+```{stan, output.var = model}
+// STAN simple logistic regression
+data {
+int<lower = 1> N; // number of obs (groups)
+int<lower = 0> n[N]; // trials for each group
+int<lower = 0> y[N]; // successes for each group
+vector[N] x; //  explanatory variable (e.g. group indicagtor)
+}
+
+parameters {
+real alpha;
+real beta;
+}
+
+
+model {
+// priors
+beta ~ normal(0, 3);
+alpha ~ normal(-3, 3); // rare event
+
+// likelihood
+y ~ binomial_logit(n, alpha + beta * x);
+}
+
+generated quantities {
+real<lower = 0> OR = exp(beta);
+}
+```
+
+```{r, include = FALSE}
+# Learn the parameters by sampling from the posterior(s)
+n <- c(n0, n1)
+y <- c(y0, y1)
+x <- c(0, 1)
+N <- length(y)
+fit <- rstan::sampling(model, 
+                       iter = 10000,
+                       data = list(n = n, y = y, N = N, x = x))
+```
+
+### Posterior distribution for the Odds ratio
+
+```{r}
+or <- extract(fit, pars ="OR")$OR
+```
+
+```{r}
+hist(or, 
+     breaks = 50,
+     main = "Posterior density of Odds ratio",
+     xlab = "OR")
+```
+
+```{r}
+mean(or)
+```
+
+
+```{r}
+quantile(or, p = c(0.025,0.975))
+```
+
