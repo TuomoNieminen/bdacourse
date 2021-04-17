@@ -319,7 +319,7 @@ quantile(or, p = c(0.025,0.975))
 
 See the model description in the beginning of the exercise for a brief sensitivity discussion.
 
-# 3
+# Exercise 3
 
 Two production lines for windshields, with independent data samples from each.
 ```{r}
