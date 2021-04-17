@@ -506,7 +506,7 @@ p(\mu, \sigma) \sim 1/\sigma
 <p><span class="math display">\[
 p(y \mid \mu, \sigma^2) \sim N(\mu, \sigma^2)
 \]</span></p>
-<p>The interest is in the parameter <span class="math inline">\(\mu\)</span> for which the marginal posterior distribution is the <span class="math inline">\(t_{n−1}(y, s^2/n)\)</span> density (BDA, page )</p>
+<p>The interest is in the parameter <span class="math inline">\(\mu\)</span> for which the marginal posterior distribution is the <span class="math inline">\(t_{n−1}(y, s^2/n)\)</span> density (BDA, page 66)</p>
 <p><span class="math display">\[
 p(\mu \mid y) \sim t_{n−1}(\bar{y}, s^2/n), \\
 s^2 = \frac{1}{n-1} \sum_{i, .., n} (y_i - \bar{y})^2
@@ -514,7 +514,7 @@ s^2 = \frac{1}{n-1} \sum_{i, .., n} (y_i - \bar{y})^2
 </div>
 <div id="a-1" class="section level2">
 <h2>a)</h2>
-<p>A point estimate can be derived from the expectation of the marginal posterior distribution of <span class="math inline">\(\mu\)</span> which in this case is <span class="math inline">\(\bar{y}\)</span></p>
+<p>A point estimate can be derived from the expectation of the marginal posterior distribution of <span class="math inline">\(\mu\)</span>, which in this case is <span class="math inline">\(\bar{y}\)</span></p>
 <pre class="r"><code>mu_point_est &lt;- function(data) {
   mean(data)
 }
@@ -541,11 +541,11 @@ mu_interval(y)</code></pre>
 <p><span class="math display">\[
 p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, s^2(1 + 1/n))
 \]</span></p>
-<p>The point estimate is the same is with the posterior distribution.</p>
+<p>The point estimate is the same as with the posterior distribution.</p>
 <pre class="r"><code>mu_pred_point_est &lt;- function(data) {
   mu_point_est(data)
 }</code></pre>
-<p>The scale now for an observation and not for the expectation, so the credible interval is quite different, otherwise the internal is derived similarily to the posterior credibel interval for <span class="math inline">\(\mu\)</span></p>
+<p>The uncertainty in the predictive distribution concerns a new observation rather than the expectation, so the credible interval is quite different. Otherwise the interval is derived similarily to the posterior credibel interval for <span class="math inline">\(\mu\)</span>.</p>
 <pre class="r"><code>mu_pred_interval &lt;- function(data, prob = 0.95) {
   q1 &lt;- (1-prob)/2
   q2 &lt;- 1 - q1
@@ -558,6 +558,7 @@ p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, s^2(1 + 1/n))
 
 mu_pred_interval(y)</code></pre>
 <pre><code>[1] 11.02792 18.19453</code></pre>
+<p>The density of the predictive distribution is shown below.</p>
 <pre class="r"><code># the density of the predictive distribution
 y_pred_dens &lt;- function(x, data = y) {
     mean &lt;- mean(data)
@@ -588,7 +589,7 @@ y1 &lt;- 22</code></pre>
 </div>
 <div id="model-1" class="section level2">
 <h2>Model</h2>
-<p>We use a weakly informative prior with the overall proportions of successes and failures in the two groups as hyperparameters. The information in the prior distributions corresponds to a single prior observation. And as there are a lot of data from both groups, the effect of any weakly informative prior will be unsignificant to the inference.</p>
+<p>We use a weakly informative prior, using the overall proportions of successes and failures in the two groups as hyperparameters for a beta distribution, for both <span class="math inline">\(p_0\)</span> and <span class="math inline">\(p_1\)</span>. The information in the prior distribution corresponds to a single observation. As there are a lot of data from both groups, the effect of any weakly informative prior will be unsignificant to the inference.</p>
 <p><span class="math display">\[
 p(p_0) \sim Beta(0.05, 0.95) \\
 p(p_1) \sim Beta(0.05, 0.95)
@@ -603,13 +604,13 @@ p(y1 \mid p1) \sim Binom(n1, y1)
 p(p_0 \mid y0) \sim Beta(y0 + 0.05, n0 - y0 + 0.95) \\
 p(p_1 \mid y1) \sim Beta(y1 + 0.05, n1 - y1 + 0.95) 
 \]</span></p>
+</div>
+<div id="a-2" class="section level2">
+<h2>a)</h2>
 <p>We are interested in the posterior distribution of the odds ratio, defined as</p>
 <p><span class="math display">\[
 OR = \frac{p_1 / (1-p_1)}{p_0 / (1 - p_0)}.
 \]</span></p>
-</div>
-<div id="a-2" class="section level2">
-<h2>a)</h2>
 <div id="conjugate-approach" class="section level3">
 <h3>Conjugate approach</h3>
 <p>We can simulate values from the posterior distribution of OR by simulating values from the posterior distributions of <span class="math inline">\(p_0\)</span> and <span class="math inline">\(p_1\)</span> and applying the definition of OR to the samples.</p>
@@ -629,12 +630,14 @@ N &lt;- 10000
 set.seed(4711)
 p0 &lt;- rbeta(N, a + y0, b + (n0-y0))
 p1 &lt;- rbeta(N, a + y1, b + (n1 - y1))</code></pre>
+<p>A point estimate for OR can be derived from the mean of the samples.</p>
 <pre class="r"><code>posterior_odds_ratio_point_est  &lt;- function(p0, p1) {
   or &lt;- OR(p0, p1)
   mean(or)
 }
 posterior_odds_ratio_point_est(p0, p1)</code></pre>
 <pre><code>[1] 0.5608043</code></pre>
+<p>A credible interval can be derived from the sample quantiles.</p>
 <pre class="r"><code> posterior_odds_ratio_interval &lt;- function(p0, p1, prob = 0.95) {
    or &lt;- OR(p0, p1)
    q1 &lt;- (1-prob) / 2
@@ -655,7 +658,7 @@ logit(p_j) = \alpha + \beta \cdot x_j,
 <p>where <span class="math inline">\(x_j\)</span> is <span class="math inline">\(0\)</span> for the control group and <span class="math inline">\(1\)</span> for the treatment group, and <span class="math inline">\(logit(p) = log(p / (1 - p))\)</span>.</p>
 <div id="estimation" class="section level4">
 <h4>Estimation</h4>
-<p>We fit the logistic regression model in STAN directly. The interest is in the exponent of the parameter <span class="math inline">\(\beta\)</span> which is the odds ratio of interest.</p>
+<p>We learn the parameters of the logistic regression model by defining the model in STAN. The interest is in the exponent of the parameter <span class="math inline">\(\beta\)</span> which is the odds ratio of interest.</p>
 <pre class="stan"><code>// STAN simple logistic regression
 data {
 int&lt;lower = 1&gt; N; // number of obs (groups)
