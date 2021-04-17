@@ -135,6 +135,7 @@ A group of patients was randomly assigned to treatment and control groups: out o
 
 
 ## Data
+
 ```{r}
 # control
 n0 <- 674
@@ -155,6 +156,7 @@ p(p_1) \sim Beta(0.05, 0.95)
 $$
 
 Likelihood
+
 $$
 p(y0 \mid p0) \sim Binom(n0, y0) \\
 p(y1 \mid p1) \sim Binom(n1, y1)
@@ -164,14 +166,15 @@ The marginal posterior distributions for $p0$ and $p1$ are
 
 $$
 p(p_0 \mid y0) \sim Beta(y0 + 0.05, n0 - y0 + 0.95) \\
-p(p_1 \mid y1) \sim Beta(y1 + 0.05, n1 - y1 + 0.95) \\
-
+p(p_1 \mid y1) \sim Beta(y1 + 0.05, n1 - y1 + 0.95) 
 $$
+
 We are interested in the posterior distribution of the odds ratio, defined as 
 
 $$
 OR = \frac{p_1 / (1-p_1)}{p_0 / (1 - p_0)}.
 $$
+
 ## a)
 
 ### Conjugate approach
