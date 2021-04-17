@@ -2,7 +2,7 @@
 title: "BDA - Assignment 2"
 author: "Anonymous"
 output: 
-  pdf_document: 
+  html_document: 
   toc: yes
 toc_depth: 1
 ---
@@ -12,12 +12,8 @@ toc_depth: 1
 # This chunk sets echo = TRUE as default, that is print all code.
 # knitr::opts_chunk$set can be used to set other notebook generation options, too.
 # include=FALSE inside curly brackets makes this block not be included in the pdf.
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, comment = NA)
 ```
-
-# Loaded packages
-
-Below are examples of how to load packages that are used in the assignment
 
 ```{r}
 # To install aaltobda, see the General information in the assignment.
@@ -35,16 +31,23 @@ a <- 2
 b <- 10
 ```
 
-The model is
+The model used in this excercise is
 
 $$
 p(\pi) \sim Beta(2, 10) \\
 p(y \mid \pi) \sim Binom(n, y, \pi)
 $$
 
+and the data are
+
+```{r}
+table(algae)
+```
+
+
 ## a)
 
-Due to conjugacy we have the following
+It is easy to see that the following holds:
 
 $$
 p(\pi) \propto \pi^{\alpha} ( 1 - \pi)^{\beta}, \\
@@ -75,19 +78,14 @@ The expectation of the beta distribution with parameters $\alpha$ and $\beta$ is
 
 # parameters of beta posterior with beta prior a, b and bibomial likelihood 
 # with data x
-beta_posterior <- function(a, b, x) {
-  c("a" = a + sum(x), "b" = b + length(x) - sum(x))
+betabin_posterior <- function(a, b, x) {
+  n <- length(x)
+  y <- sum(x)
+  c("a" = a + y, "b" = b + n - y)
 }
 beta_point_est <- function(prior_alpha, prior_beta, data) {
-  th <- beta_posterior(prior_alpha, prior_beta, data)
+  th <- betabin_posterior(prior_alpha, prior_beta, data)
   th["a"] / (th["a"] + th["b"])
-}
-
-beta_interval <- function(prior_alpha, prior_beta, data, prob  = 0.9) {
-  th <- beta_posterior(prior_alpha, prior_beta, data)
-  q1 <- (1 - prob) / 2
-  q2 <- prob + q1
-  qbeta(c(q1, q2), th["a"], th["b"])
 }
 
 ```
@@ -101,6 +99,14 @@ beta_point_est(a, b, algae)
 A 90% posterior interval can be obtained from the quantiles of the posterior Beta distribution:
 
 ```{r}
+
+beta_interval <- function(prior_alpha, prior_beta, data, prob  = 0.9) {
+  th <- betabin_posterior(prior_alpha, prior_beta, data)
+  q1 <- (1 - prob) / 2
+  q2 <- prob + q1
+  qbeta(c(q1, q2), th["a"], th["b"])
+}
+
 beta_interval(a, b, algae, 0.9)
 ```
 
@@ -112,7 +118,7 @@ In this case, the probability is
 
 ```{r}
 beta_low <- function(prior_alpha, prior_beta, data, pi_0 = 0.2) {
-  th <- beta_posterior(prior_alpha, prior_beta, data)
+  th <- betabin_posterior(prior_alpha, prior_beta, data)
   pbeta(pi_0, th["a"], th["b"])
 }
 beta_low(2, 10, algae, 0.2)
@@ -126,7 +132,7 @@ We assume the measurements $y_i$ are independent and idetically distributed.
 
 ```{r}
 plot_beta_posterior <- function(a, b, data) {
-  th <- beta_posterior(a,b,data)
+  th <- betabin_posterior(a,b,data)
   x <- seq(0, 1, by = 0.001)
   y <- dbeta(x, th["a"], th ["b"])
   plot(x, y, xlim = c(0, 1), ylim = c(0, 20), type = "l",
