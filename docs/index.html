@@ -365,12 +365,13 @@ pre code {
 <li><a href="#exercise-1-1">Exercise 1</a><ul>
 <li><a href="#data">Data</a></li>
 <li><a href="#model">Model</a></li>
+<li><a href="#a-1">a)</a></li>
 <li><a href="#b-1">b)</a></li>
 </ul></li>
 <li><a href="#exercise-2">Exercise 2</a><ul>
 <li><a href="#data-1">Data</a></li>
 <li><a href="#model-1">Model</a></li>
-<li><a href="#a-1">a)</a><ul>
+<li><a href="#a-2">a)</a><ul>
 <li><a href="#conjugate-approach">Conjugate approach</a></li>
 <li><a href="#logistic-regression-approach">Logistic regression approach</a></li>
 </ul></li>
@@ -509,7 +510,10 @@ p(y \mid \mu, \sigma^2) \sim N(\mu, \sigma^2)
 <p><span class="math display">\[
 p(\mu \mid y) \sim t_{n−1}(\bar{y}, s^2/n), \\
 s^2 = \frac{1}{n-1} \sum_{i, .., n} (y_i - \bar{y})^2
-\]</span> ## a)</p>
+\]</span></p>
+</div>
+<div id="a-1" class="section level2">
+<h2>a)</h2>
 <p>A point estimate can be derived from the expectation of the marginal posterior distribution of <span class="math inline">\(\mu\)</span> which in this case is <span class="math inline">\(\bar{y}\)</span></p>
 <pre class="r"><code>mu_point_est &lt;- function(data) {
   mean(data)
@@ -533,9 +537,9 @@ mu_interval(y)</code></pre>
 </div>
 <div id="b-1" class="section level2">
 <h2>b)</h2>
-<p>The predictive distribution for a new oberservation is a t distribution with location <span class="math inline">\(\bar{y}\)</span>, scale <span class="math inline">\(\sqrt{1 + 1/n }\)</span>, and <span class="math inline">\(n − 1\)</span> degrees of freedom (BDA, page 66).</p>
+<p>The predictive distribution for a new oberservation is a t distribution with location <span class="math inline">\(\bar{y}\)</span>, scale <span class="math inline">\(s \cdot \sqrt{1 + 1/n }\)</span>, and <span class="math inline">\(n − 1\)</span> degrees of freedom (BDA, page 66).</p>
 <p><span class="math display">\[
-p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, 1 + 1/n)
+p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, s^2(1 + 1/n))
 \]</span></p>
 <p>The point estimate is the same is with the posterior distribution.</p>
 <pre class="r"><code>mu_pred_point_est &lt;- function(data) {
@@ -604,7 +608,7 @@ p(p_1 \mid y1) \sim Beta(y1 + 0.05, n1 - y1 + 0.95)
 OR = \frac{p_1 / (1-p_1)}{p_0 / (1 - p_0)}.
 \]</span></p>
 </div>
-<div id="a-1" class="section level2">
+<div id="a-2" class="section level2">
 <h2>a)</h2>
 <div id="conjugate-approach" class="section level3">
 <h3>Conjugate approach</h3>

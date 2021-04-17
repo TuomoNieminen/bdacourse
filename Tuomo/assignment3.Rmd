@@ -52,6 +52,7 @@ $$
 p(\mu \mid y) \sim t_{n−1}(\bar{y}, s^2/n), \\
 s^2 = \frac{1}{n-1} \sum_{i, .., n} (y_i - \bar{y})^2
 $$
+
 ## a)
 
 A point estimate can be derived from the expectation of the marginal posterior distribution of $\mu$ which in this case is $\bar{y}$
@@ -83,10 +84,10 @@ mu_interval(y)
 
 ## b)
 
-The predictive distribution for a new oberservation is a t distribution with location $\bar{y}$, scale $\sqrt{1 + 1/n }$, and $n − 1$ degrees of freedom (BDA, page 66).
+The predictive distribution for a new oberservation is a t distribution with location $\bar{y}$, scale $s \cdot \sqrt{1 + 1/n }$, and $n − 1$ degrees of freedom (BDA, page 66).
 
 $$
-p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, 1 + 1/n)
+p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, s^2(1 + 1/n))
 $$
 
 The point estimate is the same is with the posterior distribution.
