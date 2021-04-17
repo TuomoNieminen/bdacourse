@@ -369,7 +369,8 @@ pre code {
 </ul></li>
 <li><a href="#exercise-2">Exercise 2</a><ul>
 <li><a href="#data-1">Data</a></li>
-<li><a href="#model-1">Model</a><ul>
+<li><a href="#model-1">Model</a></li>
+<li><a href="#a-1">a)</a><ul>
 <li><a href="#conjugate-approach">Conjugate approach</a></li>
 <li><a href="#logistic-regression-approach">Logistic regression approach</a></li>
 </ul></li>
@@ -588,16 +589,23 @@ y1 &lt;- 22</code></pre>
 p(p_0) \sim Beta(0.05, 0.95) \\
 p(p_1) \sim Beta(0.05, 0.95)
 \]</span></p>
-<p>Likelihood <span class="math display">\[
+<p>Likelihood</p>
+<p><span class="math display">\[
 p(y0 \mid p0) \sim Binom(n0, y0) \\
 p(y1 \mid p1) \sim Binom(n1, y1)
 \]</span></p>
 <p>The marginal posterior distributions for <span class="math inline">\(p0\)</span> and <span class="math inline">\(p1\)</span> are</p>
-<p>$$ p(p_0 y0) Beta(y0 + 0.05, n0 - y0 + 0.95) \ p(p_1 y1) Beta(y1 + 0.05, n1 - y1 + 0.95) \</p>
-<p>$$ We are interested in the posterior distribution of the odds ratio, defined as</p>
+<p><span class="math display">\[
+p(p_0 \mid y0) \sim Beta(y0 + 0.05, n0 - y0 + 0.95) \\
+p(p_1 \mid y1) \sim Beta(y1 + 0.05, n1 - y1 + 0.95) \\
+\]</span></p>
+<p>We are interested in the posterior distribution of the odds ratio, defined as</p>
 <p><span class="math display">\[
 OR = \frac{p_1 / (1-p_1)}{p_0 / (1 - p_0)}.
-\]</span> ## a)</p>
+\]</span></p>
+</div>
+<div id="a-1" class="section level2">
+<h2>a)</h2>
 <div id="conjugate-approach" class="section level3">
 <h3>Conjugate approach</h3>
 <p>We can simulate values from the posterior distribution of OR by simulating values from the posterior distributions of <span class="math inline">\(p_0\)</span> and <span class="math inline">\(p_1\)</span> and applying the definition of OR to the samples.</p>

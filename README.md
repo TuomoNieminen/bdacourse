@@ -5,3 +5,4 @@ Exercises for Bayesian data analysis course by Aki Vehtari
 
 [Bayesian Data Analysis ebook](http://www.stat.columbia.edu/~gelman/book/BDA3.pdf)
 
+[Some solutions](https://tuomonieminen.github.io/bdacourse/)
