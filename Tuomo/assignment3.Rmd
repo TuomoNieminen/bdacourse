@@ -228,10 +228,10 @@ posterior_odds_ratio_interval(p0, p1)
 ### Logistic regression approach
 
 The Odds ratio can also be estimated using a logistic regression model. 
-Let $p_j = P(y_j = 1)$, where $j \in \{\text{control}, \text{treatment} \}$. Then let
+Let $p_j = E[y_j] = P(y_j = 1)$, where $j \in \{\text{control}, \text{treatment} \}$. Then let
 
 $$
-logit(y_j) = \alpha + \beta \cdot x_j,
+logit(p_j) = \alpha + \beta \cdot x_j,
 $$
 
 where $x_j$ is $0$ for the control group and $1$ for the treatment group, and $logit(p) = log(p / (1 - p))$. 
