@@ -270,8 +270,8 @@ real beta;
 
 model {
 // priors
-beta ~ normal(0, 3);
-alpha ~ normal(-3, 3); // rare event
+beta ~ normal(0, 4);
+alpha ~ normal(-3, 4); // rare event
 
 // likelihood
 y ~ binomial_logit(n, alpha + beta * x);
@@ -282,7 +282,7 @@ real<lower = 0> OR = exp(beta);
 }
 ```
 
-```{r, include = FALSE}
+```{r, results = "hide"}
 # Learn the parameters by sampling from the posterior(s)
 n <- c(n0, n1)
 y <- c(y0, y1)
@@ -290,7 +290,10 @@ x <- c(0, 1)
 N <- length(y)
 fit <- rstan::sampling(model, 
                        iter = 10000,
-                       data = list(n = n, y = y, N = N, x = x))
+                       data = list(n = n, 
+                                   y = y, 
+                                   N = N, 
+                                   x = x))
 ```
 
 #### Posterior distribution for the Odds ratio
@@ -306,10 +309,13 @@ hist(or,
      xlab = "OR")
 ```
 
+The point estimate is
+
 ```{r}
 mean(or)
 ```
 
+An interval estimate is very similar to the one obtained earlier using the conjugate aproach:
 
 ```{r}
 quantile(or, p = c(0.025,0.975))
