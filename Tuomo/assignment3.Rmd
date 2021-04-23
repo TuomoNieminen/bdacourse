@@ -1,0 +1,404 @@
+---
+title: "BDA - Assignment 3"
+author: "Anonymous"
+output: html_document
+---
+
+
+```{r as3setup, include=FALSE}
+# This chunk sets echo = TRUE as default, that is print all code.
+# knitr::opts_chunk$set can be used to set other notebook generation options, too.
+# include=FALSE inside curly brackets makes this block not be included in the pdf.
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Exercise 1
+
+```{r, include = FALSE}
+library(aaltobda)
+library(markmyassignment)
+assignment_path <-
+paste("https://github.com/avehtari/BDA_course_Aalto/",
+"blob/master/assignments/tests/assignment3.yml", sep="")
+set_assignment(assignment_path)
+
+```
+
+## Data
+
+```{r}
+y <- get(data("windshieldy1"))
+head(y)
+```
+
+## Model
+
+Prior is uniform on $(\mu, log(sigma))$, i.e.:
+
+$$
+p(\mu, \sigma) \sim 1/\sigma
+$$
+
+Likelihood is
+
+$$
+p(y \mid \mu, \sigma^2) \sim N(\mu, \sigma^2)
+$$
+
+The interest is in the parameter $\mu$ for which the marginal posterior distribution is the $t_{n−1}(y, s^2/n)$ density (BDA, page 66)
+
+$$
+p(\mu \mid y) \sim t_{n−1}(\bar{y}, s^2/n), \\
+s^2 = \frac{1}{n-1} \sum_{i, .., n} (y_i - \bar{y})^2
+$$
+
+## a)
+
+A point estimate can be derived from the expectation of the marginal posterior distribution of $\mu$, which in this case is $\bar{y}$
+
+```{r}
+mu_point_est <- function(data) {
+  mean(data)
+}
+
+mu_point_est(y)
+```
+
+A credible interval can be derived from the tails of the student-t distribution with the appropriate degrees of freedom, location and scale, which are $n-1$, $\bar{y}$ and $s/\sqrt{n}$, respectively. 
+
+```{r}
+mu_interval <- function(data, prob = 0.95) {
+  q1 <- (1-prob)/2
+  q2 <- 1 - q1
+  mean <- mean(data)
+  n <- length(data)
+  df <- n -1
+  scale <- sd(data) / sqrt(n)
+  qtnew(c(q1, q2), df = df, mean = mean, scale = scale)
+}
+
+mu_interval(y)
+```
+
+
+## b)
+
+The predictive distribution for a new oberservation is a t distribution with location $\bar{y}$, scale $s \cdot \sqrt{1 + 1/n }$, and $n − 1$ degrees of freedom (BDA, page 66).
+
+$$
+p(\tilde{y} | y) \sim t_{n-1}(\bar{y}, s^2(1 + 1/n))
+$$
+
+The point estimate is the same as with the posterior distribution.
+
+```{r}
+mu_pred_point_est <- function(data) {
+  mu_point_est(data)
+}
+```
+
+The uncertainty in the predictive distribution concerns a new observation rather than the expectation, so the credible interval is quite different. Otherwise the interval is derived similarily to the posterior credibel interval for $\mu$.
+
+```{r}
+mu_pred_interval <- function(data, prob = 0.95) {
+  q1 <- (1-prob)/2
+  q2 <- 1 - q1
+  mean <- mean(data)
+  n <- length(data)
+  df <- n -1
+  scale <- sqrt(1 + 1/n)*sd(data)
+  qtnew(c(q1, q2), df = df, mean = mean, scale = scale)
+}
+
+mu_pred_interval(y)
+```
+
+The density of the predictive distribution is shown below.
+
+```{r}
+# the density of the predictive distribution
+y_pred_dens <- function(x, data = y) {
+    mean <- mean(data)
+  n <- length(data)
+  df <- n -1
+  scale <- sqrt(1 + 1/n)*sd(data)
+  dtnew(x, df = df, mean = mean, scale = scale)
+}
+
+new_y <- seq(10, 20, by = 0.01)
+density <- y_pred_dens(new_y)
+plot(new_y, density, type = "l")
+```
+
+# Exercise 2
+
+A group of patients was randomly assigned to treatment and control groups: out of 674 patients receiving the control, 39 died, and out of 680 receiving the treatment, 22 died.
+
+
+## Data
+
+```{r}
+# control
+n0 <- 674
+y0 <- 39
+
+# treatment
+n1 <- 680
+y1 <- 22
+```
+
+## Model
+
+We use a weakly informative prior, using the overall proportions of successes and failures in the two groups as hyperparameters for a beta distribution, for both $p_0$ and $p_1$.  The information in the prior distribution corresponds to a single observation. As there are a lot of data from both groups, the effect of any weakly informative prior will be unsignificant to the inference.
+
+$$
+p(p_0) \sim Beta(0.05, 0.95) \\
+p(p_1) \sim Beta(0.05, 0.95)
+$$
+
+Likelihood
+
+$$
+p(y0 \mid p0) \sim Binom(n0, y0) \\
+p(y1 \mid p1) \sim Binom(n1, y1)
+$$
+
+The marginal posterior distributions for $p0$ and $p1$ are
+
+$$
+p(p_0 \mid y0) \sim Beta(y0 + 0.05, n0 - y0 + 0.95) \\
+p(p_1 \mid y1) \sim Beta(y1 + 0.05, n1 - y1 + 0.95) 
+$$
+
+## a)
+
+
+We are interested in the posterior distribution of the odds ratio, defined as 
+
+$$
+OR = \frac{p_1 / (1-p_1)}{p_0 / (1 - p_0)}.
+$$
+
+
+### Conjugate approach
+
+We can simulate values from the posterior distribution of OR by simulating values from the posterior distributions of $p_0$ and $p_1$ and applying the definition of OR to the samples.
+
+```{r}
+OR <- function(p0, p1) {
+  odds0 <- p0 / (1 - p0)
+  odds1 <- p1 / (1 - p1)
+  odds1 / odds0
+}
+```
+
+
+```{r}
+
+# simulate values from the posteriors of p0 and p1
+
+# hyperparameters
+a <- 0.05
+b <- 0.95
+
+# posterior samples
+N <- 10000
+set.seed(4711)
+p0 <- rbeta(N, a + y0, b + (n0-y0))
+p1 <- rbeta(N, a + y1, b + (n1 - y1))
+```
+
+A point estimate for OR can be derived from the mean of the samples.
+
+```{r}
+posterior_odds_ratio_point_est  <- function(p0, p1) {
+  or <- OR(p0, p1)
+  mean(or)
+}
+posterior_odds_ratio_point_est(p0, p1)
+```
+
+A credible interval can be derived from the sample quantiles.
+
+```{r}
+ posterior_odds_ratio_interval <- function(p0, p1, prob = 0.95) {
+   or <- OR(p0, p1)
+   q1 <- (1-prob) / 2
+   q2 <- 1 - q1
+   quantile(or, probs = c(q1, q2))
+ }
+
+posterior_odds_ratio_interval(p0, p1)
+```
+
+### Logistic regression approach
+
+The Odds ratio can also be estimated using a logistic regression model. 
+Let $p_j = E[y_j] = P(y_j = 1)$, where $j \in \{\text{control}, \text{treatment} \}$. Then let
+
+$$
+logit(p_j) = \alpha + \beta \cdot x_j,
+$$
+
+where $x_j$ is $0$ for the control group and $1$ for the treatment group, and $logit(p) = log(p / (1 - p))$. 
+
+
+#### Estimation
+
+We learn the parameters of the logistic regression model by defining the model in STAN. The interest is in the exponent of the parameter $\beta$ which is the odds ratio of interest.
+
+
+```{r include = FALSE}
+library(rstan)
+```
+
+```{stan, output.var = "model"}
+// STAN simple logistic regression
+data {
+int<lower = 1> N; // number of obs (groups)
+int<lower = 0> n[N]; // trials for each group
+int<lower = 0> y[N]; // successes for each group
+vector[N] x; //  explanatory variable (e.g. group indicagtor)
+}
+
+parameters {
+real alpha;
+real beta;
+}
+
+
+model {
+// priors
+beta ~ normal(0, 4);
+alpha ~ normal(-3, 4); // rare event
+
+// likelihood
+y ~ binomial_logit(n, alpha + beta * x);
+}
+
+generated quantities {
+real<lower = 0> OR = exp(beta);
+}
+```
+
+```{r, results = "hide"}
+# Learn the parameters by sampling from the posterior(s)
+n <- c(n0, n1)
+y <- c(y0, y1)
+x <- c(0, 1)
+N <- length(y)
+fit <- rstan::sampling(model, 
+                       iter = 10000,
+                       data = list(n = n, 
+                                   y = y, 
+                                   N = N, 
+                                   x = x))
+```
+
+#### Posterior distribution for the Odds ratio
+
+```{r}
+or <- extract(fit, pars ="OR")$OR
+```
+
+```{r}
+hist(or, 
+     breaks = 50,
+     main = "Posterior density of Odds ratio",
+     xlab = "OR")
+```
+
+The point estimate is
+
+```{r}
+mean(or)
+```
+
+An interval estimate is very similar to the one obtained earlier using the conjugate aproach:
+
+```{r}
+quantile(or, p = c(0.025,0.975))
+```
+
+## b) 
+
+See the model description in the beginning of the exercise for a brief sensitivity discussion.
+
+# Exercise 3
+
+Two production lines for windshields, with independent data samples from each.
+```{r}
+y1 <- get(data("windshieldy1"))
+y2 <- get(data("windshieldy2"))
+```
+
+A summary of data from production line 1:
+```{r}
+summary(y1)
+```
+
+A summary of data from production line 2:
+
+```{r}
+summary(y2)
+```
+
+We assume that the samples come from two normal distributions with unknown means $\mu_1$ and $\mu_2$ and unkown standard deviations $\sigma_1$ and $\sigma_2$.
+
+## Model
+
+If we choose to use a uniform prior for the means and standard deviations, then the model for both production lines is identical to the model defined in the first exercise and the posterior distributions are t distributions.
+
+
+## a)
+
+
+```{r}
+t_posterior <- function(y, N = 5000) {
+  n <- length(y)
+  mean <- mean(y)
+  scale <- sd(y) / sqrt(n)
+  df <- n - 1
+  list(df = df,
+       mean = mean,
+       scale = scale,
+       n = N)
+}
+s1 <- do.call("rtnew", t_posterior(y1))
+s2 <- do.call("rtnew", t_posterior(y2))
+mu_d <- s1 - s2
+```
+
+The point estimate for $\mu_d = \mu_1 - \mu_2$ is
+
+```{r}
+mean(mu_d)
+```
+
+A 90% credible interval is:
+
+```{r}
+quantile(mu_d, p = c(0.05, 0.95))
+```
+
+A histogram of the posterior is
+
+```{r}
+hist(mu_d, breaks = 50)
+```
+
+The (posterior) probability that $mu_1 > mu_2$ is 
+
+```{r}
+sum(mu_d > 0) / length(mu_d)
+```
+
+## b)
+
+Addressing the question literally, for the means $\mu_1$ and $\mu_2$ to be exactly the same, the two production lines should be identical, i.e. they should be the same production line, in which case of course $\mu_1 = \mu_2$ (with probability one). 
+
+However, even if the production lines were identical, the posterior distributions for $\mu_1$ and $\mu2$ would be identical with probability zero, unless the number of data points are infinite. From a practical point of view, however, the posterior distributions could be identical, due to the discrete nature of measurement.
+
+If the two production lines are not identical, the posterior distributions for $\mu_1$ and $\mu_2$ should be different and $\mu_d = 0$ with probability zero. However, in practise the two posteriors could still be identical, due to discrete measurements.
+
