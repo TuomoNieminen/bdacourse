@@ -1,0 +1,228 @@
+---
+title: "BDA - Assignment 4"
+author: "Anonymous"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+# This chunk sets echo = TRUE as default, that is print all code.
+# knitr::opts_chunk$set can be used to set other notebook generation options, too.
+# include=FALSE inside curly brackets makes this block not be included in the pdf.
+knitr::opts_chunk$set(echo = TRUE)
+library(markmyassignment)
+assignment_path <-
+paste("https://github.com/avehtari/BDA_course_Aalto/",
+"blob/master/assignments/tests/assignment4.yml", sep="")
+set_assignment(assignment_path)
+
+```
+
+# Loaded packages
+
+Below are examples of how to load packages that are used in the assignment
+
+```{r}
+# To install aaltobda, see the General information in the assignment.
+library(aaltobda)
+```
+
+
+# Exercise 1
+
+## a)
+
+The model used in the assignment is
+
+$$
+\alpha \sim N(0, 2) \\
+\beta \sim N(10,10) \\
+cor(alpha, beta) = 0.6,
+$$
+
+which is equivalent with
+
+$$
+(\alpha, \beta) \sim N(
+\begin{pmatrix}0 \\ 10\end{pmatrix}, 
+\begin{pmatrix}2^2 & 12\\12 & 10^2\end{pmatrix})
+$$
+
+
+## b)
+
+*Report the mean as well as 5 % and 95 % quantiles separately for both $\alpha$ and $\beta$. Report also the Monte Carlo standard errors (MCSEs) for the mean and quantile estimates. Report as many digits for the mean and quantiles as the MCSEs allow.*
+
+With S draws, the MCSE for $E[\theta]$ is $\sqrt{Var(\theta) / S}$. Here, $S = 4000$. The MCSE estimates are
+
+```{r}
+y <- get(data("bioassay_posterior"))
+sqrt(sapply(y, "var") / 4000)
+```
+
+```{r}
+digits <- function(x, n) 
+  format(round(x, n), nsmall = n)
+```
+
+The rounded estimate for alpha, with sifgnificant digits not subject to simulation error is
+
+```{r}
+alpha_signif <- 1
+digits(mean(y$alpha),alpha_signif)
+```
+
+The rounded estimate for beta, with sifgnificant digits not subject to simulation error is
+
+```{r}
+beta_signif <- 1
+digits(mean(y$beta),beta_signif)
+```
+
+
+
+## c)
+
+Denote by $g$ the prior distribution which is also the approximating distribution. Denote by $L$ the likelihood and by $q(\theta) = g(\theta) L(\theta)$ the target distribution (the posterior). The weights for the importance ratios are defined as 
+
+$$
+w(\theta) = q(\theta) / g(\theta) \\
+w(\theta) = g(\theta) L(\theta) / g(\theta) \\
+w(\theta) = L(\theta)
+$$
+and so the weights are simply given my the likelihood.
+
+```{r}
+df <- get(data("bioassay"))
+
+log_importance_weights <- function(alpha, beta) {
+  bioassaylp(a = alpha, 
+             b = beta,
+             x = df$x, 
+             y = df$y, 
+             n = df$n)
+}
+
+```
+
+## d)
+
+Below is a function for computing normalized importance ratios from the unnormalized log ratios in c). In other words, we  exponentiate the log ratios and scale them
+such that they sum to one.
+
+
+```{r}
+normalized_importance_weights <- function(alpha, beta) {
+  lw <- log_importance_weights(alpha, beta)
+  w <- exp(lw)
+  w / sum(w)
+} 
+```
+
+## e)
+
+We draw 4000 samples from the prior distribution of $(\alpha, \beta)$, which is the bivariate normal distribution specified earlier.
+
+```{r}
+mu <- c(0, 10)
+S <- matrix(c(2^2, 2*10*0.6, 
+              2*10*0.6, 10^2 ),
+            ncol = 2)
+
+x <- rmvnorm(4000, mu, S)
+```
+
+The sample means should be aproximately 0 and 10.
+
+```{r}
+apply(x, 2, "mean")
+```
+
+The sample standard deviations should be aproximately 2 and 10. 
+```{r}
+apply(x, 2, "sd")
+```
+
+The sample correlation should be aproximately 0.6.
+
+```{r}
+cor(x[, 1], x[, 2])
+```
+
+
+We retrieve the normalied log importance weights using the 400 samples and and plot a historam of them. Most of the log weights close to zero, meaning that the weights are close to one, in turn meaning that the aproximate distribution (here the prior) often matches the target distribution well.
+
+```{r}
+alpha <- x[, 1]
+beta <- x[, 2]
+weights <- normalized_importance_weights(alpha, beta)
+hist(weights, breaks = 50)
+```
+
+## f)
+
+We define the effective sample size as in BDA equation 10.4.
+
+```{r}
+S_eff <- function(alpha, beta) {
+  wnorm <- normalized_importance_weights(alpha, beta)
+  1 / sum(wnorm**2)
+}
+
+
+round(S_eff(alpha, beta))
+```
+
+## g)
+
+*Explain the computation of the effective sample size.*
+
+The idea of the computation is that when there are big relative differences in the weights, resulting in some of the normalized weight to be much larger than others, then the effective sample size is smaller. When all of the weights are equal (the proposal mathes the target perfectly) then the effective sample size is the number of proposal draws. The histogram in e) shows that there are differences in the weights and the effective sample size is far from the number of proposals.
+
+## h)
+
+Below is function for computing the posterior mean using importance sampling, and the mean computed using 4000 draws from the prior (proposal). 
+
+```{r}
+posterior_mean <- function(alpha, beta) {
+  w <- log_importance_weights(alpha, beta)
+  w <- exp(w)
+  a <- weighted.mean(alpha, w) 
+  b <- weighted.mean(beta, w) 
+  c(a,b)
+}
+
+theta_post <- posterior_mean(alpha, beta)
+theta_post
+```
+
+We now compute the MCSE and report the estimates accounting for the simulation error.
+
+
+```{r}
+
+w <- log_importance_weights(alpha, beta)
+w <- exp(w)
+e_a <- weighted.mean(alpha, w) 
+e_b <- weighted.mean(beta, w) 
+
+e2_a <- weighted.mean(alpha**2, w)
+e2_b <- weighted.mean(beta**2, w)
+
+var_a <-  e2_a - e_a**2
+var_b <- e2_b - e_b**2 
+
+S <- S_eff(alpha, beta)
+
+c("mcse_alpa" =sqrt(var_a / S),
+"msce_beta" = sqrt(var_b / S))
+
+```
+
+The posterior mean estimates with the apropriate digits are:
+
+```{r}
+c("alpha" = digits(e_a, 1),
+"beta" = digits(e_b, 0))
+```
+
