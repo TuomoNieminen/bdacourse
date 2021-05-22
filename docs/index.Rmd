@@ -8,6 +8,8 @@ toc_depth: 1
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+pandir <- "C:/users/Tuomo/AppData/Local/Pandoc"
+rmarkdown::find_pandoc(cache = FALSE, dir = pandir)
 ```
 
 
@@ -20,5 +22,11 @@ knitr::opts_chunk$set(echo = TRUE)
 # Assignment 3
 
 ```{r, child=c("../Tuomo/assignment3.Rmd")}
+
+```
+
+# Assignment 4
+
+```{r, child=c("../Tuomo/assignment4.Rmd")}
 
 ```
