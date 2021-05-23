@@ -1,0 +1,169 @@
+---
+title: "BDA - Assignment 5"
+author: "Anonymous"
+output: html_document 
+---
+
+
+```{r, include=FALSE}
+# This chunk sets echo = TRUE as default, that is print all code.
+# knitr::opts_chunk$set can be used to set other notebook generation options, too.
+# include=FALSE inside curly brackets makes this block not be included in the pdf.
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loaded packages
+
+
+```{r}
+# To install aaltobda, see the General information in the assignment.
+library(aaltobda)
+
+library(markmyassignment)
+assignment_path <-
+  paste("https://github.com/avehtari/BDA_course_Aalto/,
+blob/master/assignments/tests/assignment5.yml", sep="")
+set_assignment(assignment_path)
+
+```
+
+
+
+# Exercise 1
+
+We implement the Metropolis algorithm as an R function for the bioassay data using the
+Gaussian prior as in Assignment 4, that is
+
+$$
+(\alpha, \beta) \sim N(
+\begin{pmatrix}0 \\ 10\end{pmatrix}, 
+\begin{pmatrix}2^2 & 12\\12 & 10^2\end{pmatrix})
+$$
+
+
+```{r}
+mu <- c(0, 10)
+S <- matrix(c(2^2, 2*10*0.6, 
+              2*10*0.6, 10^2 ),
+            ncol = 2)
+```
+
+## a)
+
+We start by implementing a function called density_ratio to compute the density ratio function (*r* in Eq. (11.1) in BDA3).
+
+The unnormalised posterior is an exponent of the sum of log likelihood and log prior
+
+```{r}
+
+unnormalised_posterior <- function(a, b, x, y, n) {
+  loglik <-   bioassaylp(a = a, 
+                         b = b,
+                         x = x, 
+                         y = y, 
+                         n = n)
+  
+  prior <- dmvnorm(c(a, b), mu, S, log = TRUE)
+  
+  exp(loglik + prior)
+  
+}
+```
+
+The density ratio is the ratio of the unnormalised posterior at the previous and proposed values of $\alpha$ and $\beta$.
+
+```{r}
+
+density_ratio <- function(alpha_propose,
+                          alpha_previous,
+                          beta_propose, 
+                          beta_previous,
+                          x,
+                          y, 
+                          n) {
+  
+  prop <-   unnormalised_posterior(a = alpha_propose, 
+                                   b = beta_propose,
+                                   x = x, 
+                                   y = y, 
+                                   n = n)
+  
+  prev <- unnormalised_posterior(a = alpha_previous, 
+                                 b = beta_previous,
+                                 x = x, 
+                                 y = y, 
+                                 n = n)
+  
+  prop / prev
+}
+```
+
+
+## b)
+
+We implement a function called Metropolis_bioassay() which implements the Metropolis algorithm using the density_ratio(). We utilise simple (normal) proposal distributions. 
+
+```{r}
+Metropolis_bioassay <- function(bioassay,
+                                init_a, 
+                                init_b, 
+                                iters = 4000,
+                                a_prop_scale = 1,
+                                b_prop_scale = 5) {
+  
+  res <- data.frame(alpha = rep(as.numeric(NA), iters),
+                    beta = rep(as.numeric(NA), iters),
+                    accept = NA)
+  
+  a_prev <- init_a
+  b_prev <- init_b
+  
+  for (i in 1:iters) {
+    
+    a_prop <- rnorm(1, a_prev, a_prop_scale)
+    b_prop <- rnorm(1, b_prev, b_prop_scale)
+    
+    r <- density_ratio(alpha_propose = a_prop,
+                       alpha_previous = a_prev,
+                       beta_propose = b_prop,
+                       beta_previous = b_prev,
+                       x = bioassay$x, 
+                       y = bioassay$y, 
+                       n = bioassay$n)
+    accept <- runif(1) < r
+    res[i, "alpha"] <- ifelse(accept, a_prop, a_prev)
+    res[i, "beta"] <- ifelse(accept, b_prop, b_prev)
+    res[i, "accept"] <- accept
+    
+    a_prev <- res[i, "alpha"]
+    b_prev <- res[i, "beta"]
+    
+  }
+  
+  res
+}
+
+```
+
+We run the Metropolis algorithm using the scales 1 and 5 for the alpha and beta proposal distributions, respectively
+```{r}
+bioassay <- get(data("bioassay"))
+df <- Metropolis_bioassay(bioassay,
+                          init_a = rnorm(1, 1, 3),
+                          init_b = rnorm(1, 10, 5))
+                          
+```
+
+The acceptance rate is `r mean(df$accept)` which is close to the optimal 40%. Therefore we make no adjustments.
+
+
+# Exercise 2
+
+## a) 
+
+*Describe the basic idea of the Metropolis algorithm*.
+
+The metropolis algorithm can be seen as a stochastic mode finding algorithm which converges to the target distribution. 
+
+## b)
+
