@@ -1,0 +1,44 @@
+---
+title: "ass6_arho"
+author: "Arho Toikka"
+date: "30 5 2021"
+output: html_document
+---
+
+```{r}
+library(aaltobda)
+data("bioassay")
+library(rstan)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+library(tidyr)
+library(loo)
+library(ggplot2)
+library(gridExtra)
+library(bayesplot)
+library(shinystan)
+library(rprojroot)
+
+```
+
+```{r}
+
+mu <- c(0, 10)
+prior_sd <- c(2, 10)
+correlations <- matrix(c(1,0.6,0.6,1), nrow=2)
+sigma <- outer(prior_sd, prior_sd) * correlations
+
+bioassay_fit <- stan("bioassay.stan", data=list(bioassay, mu, sigma))
+```
+
+```{r}
+
+SEED <- 2211
+data_bern <- list(N = 10, y = c(1, 1, 1, 0, 1, 1, 1, 0, 1, 0))
+fit_bern <- stan(file = "ber.stan", data = data_bern, seed = SEED)
+
+monitor(fit_bern)
+draws <- as.data.frame(fit_bern)
+mcmc_hist(draws, pars='theta')
+```
+
